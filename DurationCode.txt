@@ -6,7 +6,7 @@ str(mydata)
 head(mydata)
 names(mydata)
 
-#MY RESERACH QUESTIONS#
+#MY RESEARCH QUESTIONS#
 #Do pesticides have an effect on bees foraging behaviour (duration of bouts)? 
 #Does the effect of pesticides change with bees' size (mass)?
 
