@@ -1,0 +1,93 @@
+
+rm(list = ls())
+setwd("~/code")
+mydata <-read.csv("Bouts_Filtered_Committed.csv")
+str(mydata)
+head(mydata)
+names(mydata)
+
+#MY RESERACH QUESTIONS#
+#Do pesticides have an effect on bees foraging behaviour (duration of bouts)? 
+#Does the effect of pesticides change with bees' size (mass)?
+
+####DATA VISUALISATION####
+
+#check the spread of my response variable
+hist(mydata$duration) 
+#not normally distributed. it looks like poisson. right spread.
+#Can't use poisson distribution as duration is not count data
+
+#log-tranformation
+hist(log10(mydata$duration)) 
+
+#does duration change with treatment?
+boxplot(duration~treatment, outline=FALSE, data=mydata)
+#during the pesticide treatment the duration seems to be slightly higher
+
+#does duration change with mass?
+plot(duration~mass, data=mydata)
+#it seems that mass has no effect on the duration
+#check effect of treatments
+abline(lm(duration[treatment=="control"]~mass[treatment=="control"], data=mydata), col="red")
+abline(lm(duration[treatment=="pesticide"]~mass[treatment=="pesticide"], data=mydata), col="green")
+#there seems to be no significant effects
+#with pesticide treatment the duration is slightly higher (compared to the control treatment ) in small bees, but it becomes slightly lower with big bees
+
+#INSTALL lme4 package
+install.packages("lme4")
+install.packages("Matrix")
+require(lme4)
+
+#BASIC MODEL
+mod1<-lmer(log10(duration)~treatment + mass+study_day + max_temp + bout_type + (1|colonyID/UID) + (1|replication), data=mydata)
+summary(mod1)
+#mass is not significant but study day is a very important variable, therefore I assume that the effects of pesticides on bees foraging behaviour are CHRONIC!
+
+
+#MAXIMAL MODEL
+mod2 <-lmer(log10(duration)~treatment+mass+study_day + max_temp + bout_type + treatment:study_day + treatment:mass + (1|colonyID/UID) + (1|replication), data = mydata)
+summary(mod2)
+#treatment alone has no effect
+#mass has no effect
+#interaction between mass and treatment has no effect
+
+
+#MODEL simplification
+mod3 <-lmer(log10(duration)~treatment + study_day + max_temp + bout_type + treatment:study_day + (1|colonyID/UID) + (1|replication), data = mydata)
+summary(mod3)
+
+
+#variation explained by random factors
+0.0026708/(0.0089229+0.0026708+0.0007973) #colonyID
+0.0089229/(0.0089229+0.0026708+0.0007973) #UID:colonyID
+0.0007973/(0.0089229+0.0026708+0.0007973) #replication
+
+
+##Check if the model works well for these data##
+# diagnostic plots for mixed effects model. 
+diagnosticplots<-function(mod) { 
+  residual<-resid(mod)
+  fit<-fitted(mod)
+  plot(residual~fit)
+  readline("Continue?")
+  qqnorm(residual)
+  qqline(residual)
+}
+diagnosticplots(mod2)
+
+
+##PLOT results##
+
+#duration over maximum temperature
+plot(duration~max_temp, xlab="maximum temperature (°C)", ylab="duration", main="duration over temperature", data=mydata)
+abline(lm(duration~max_temp, data=mydata), col="red")
+
+#duratin over bout type
+boxplot(duration~bout_type, data=mydata, outline=FALSE, xlab="bout type", ylab= "duration", main="duration over bout type")
+
+#duration over time differentiated by treatments
+boxplot(duration~treatment*study_day,outline=FALSE, col=c("green", "red"), xlab= "study day", ylab= "duration", main= "duration over time differentiated by treatments", data=mydata) 
+
+#references for R and for the model (to include in the report)
+citation()
+citation("lme4")
